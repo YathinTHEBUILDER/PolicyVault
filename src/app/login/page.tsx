@@ -36,7 +36,7 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-
+  return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Background Orbs */}
       <div className="absolute top-0 -left-20 w-96 h-96 bg-blue-600/5 rounded-full blur-[128px]" />
