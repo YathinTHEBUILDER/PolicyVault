@@ -59,7 +59,7 @@ export default function MotorDashboard() {
     try {
       const [policies, claims, renewals] = await Promise.all([
         supabase.from('motor_policies').select('*', { count: 'exact' }).eq('archived', false),
-        supabase.from('claims').select('*', { count: 'exact' }).eq('category', 'motor').eq('status', 'pending'),
+        supabase.from('claims').select('*', { count: 'exact' }).eq('policy_type', 'motor').eq('status', 'pending'),
         supabase.from('motor_policies')
           .select('*, customer:customer_id(full_name)')
           .lte('od_expiry_date', next30Days)

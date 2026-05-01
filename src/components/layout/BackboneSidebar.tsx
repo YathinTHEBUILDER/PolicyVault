@@ -5,8 +5,10 @@ import { usePathname } from 'next/navigation';
 import { 
   Users, 
   FileText, 
-  Wallet, 
   ShieldCheck, 
+  ClipboardCheck,
+  RefreshCcw,
+  History,
   PieChart,
   ArrowLeft,
   Settings,
@@ -18,9 +20,11 @@ import UniversalSearch from './UniversalSearch';
 
 const backboneItems = [
   { label: 'Global Customers', href: '/customers', icon: Users },
+  { label: 'All Policies', href: '/policies', icon: ShieldCheck },
+  { label: 'Claims Registry', href: '/claims', icon: ClipboardCheck },
+  { label: 'Renewal Pipeline', href: '/renewals', icon: RefreshCcw },
+  { label: 'Endorsements', href: '/endorsements', icon: History },
   { label: 'Document Vault', href: '/documents', icon: FileText },
-  { label: 'Financials', href: '/finance', icon: Wallet },
-  { label: 'Insurer Mappings', href: '/insurers', icon: ShieldCheck },
   { label: 'Unified Reports', href: '/reports', icon: PieChart },
 ];
 

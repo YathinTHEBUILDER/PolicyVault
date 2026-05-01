@@ -14,5 +14,5 @@ export const claimSchema = z.object({
   settlement_date: z.string().optional(),
   payment_mode: z.string().optional(),
   notes: z.string().optional(),
-  document_keys: z.array(z.string()).optional().default([]),
+  document_keys: z.array(z.any()).optional().default([]),
 });

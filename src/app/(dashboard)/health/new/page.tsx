@@ -217,6 +217,14 @@ export default function NewHealthPolicyPage() {
                   <label className="text-sm font-bold text-slate-700 ml-1">Sum Insured *</label>
                   <input type="number" {...register('sum_insured')} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Start Date *</label>
+                  <input type="date" {...register('start_date')} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Expiry Date *</label>
+                  <input type="date" {...register('expiry_date')} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
+                </div>
               </div>
             </div>
 

@@ -25,6 +25,8 @@ export const healthPolicySchema = z.object({
   critical_illness_flag: z.boolean().default(false),
   pa_rider_flag: z.boolean().default(false),
   opd_flag: z.boolean().default(false),
+  start_date: z.string().min(1, 'Required'),
+  expiry_date: z.string().min(1, 'Required'),
   policy_file_key: z.string().optional(),
   tpa_card_key: z.string().optional(),
 });

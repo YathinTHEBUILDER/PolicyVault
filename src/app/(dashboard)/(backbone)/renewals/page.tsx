@@ -225,8 +225,8 @@ export default function RenewalsPage() {
                            <div className="flex flex-col gap-1">
                              <p className="text-sm font-bold text-slate-900">
                                {policy.category === 'Motor' && policy.policy_type === 'first_party' 
-                                 ? `OD: ${format(new Date(policy.od_expiry_date), 'dd MMM')} / TP: ${format(new Date(policy.tp_expiry_date), 'dd MMM')}`
-                                 : format(new Date(policy.display_expiry), 'dd MMM yyyy')}
+                                 ? `${policy.od_expiry_date ? 'OD: ' + format(new Date(policy.od_expiry_date), 'dd MMM') : ''}${policy.od_expiry_date && policy.tp_expiry_date ? ' / ' : ''}${policy.tp_expiry_date ? 'TP: ' + format(new Date(policy.tp_expiry_date), 'dd MMM') : ''}`
+                                 : policy.display_expiry ? format(new Date(policy.display_expiry), 'dd MMM yyyy') : '-'}
                              </p>
                              <div className={cn(
                                "text-[10px] font-black px-2 py-0.5 rounded-full border w-fit flex items-center gap-1",

@@ -60,7 +60,7 @@ export default function HealthDashboard() {
     try {
       const [policies, claims, renewals] = await Promise.all([
         supabase.from('health_policies').select('*', { count: 'exact' }).eq('archived', false),
-        supabase.from('claims').select('*', { count: 'exact' }).eq('category', 'health').eq('status', 'pending'),
+        supabase.from('claims').select('*', { count: 'exact' }).eq('policy_type', 'health').eq('status', 'pending'),
         supabase.from('health_policies')
           .select('*, customer:customer_id(full_name)')
           .lte('expiry_date', next30Days)

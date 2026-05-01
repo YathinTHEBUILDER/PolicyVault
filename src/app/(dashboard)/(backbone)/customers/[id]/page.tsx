@@ -75,7 +75,7 @@ export default function CustomerProfilePage() {
     setIsLoading(true);
     const { data, error } = await supabase
       .from('customers')
-      .select('*, referred_by:referred_by_customer_id(full_name), staff:assigned_staff_id(email)')
+      .select('id, full_name, dob, gender, phone_primary, phone_alternate, email, address_permanent, address_mailing, occupation, employer, annual_income_bracket, nominee_name, nominee_relationship, vip_flag, blacklist_flag, blacklist_reason, preferred_contact_method, best_time_to_call, do_not_disturb, lead_source, referred_by:referred_by_customer_id(full_name), staff:assigned_staff_id(email)')
       .eq('id', id)
       .single();
 

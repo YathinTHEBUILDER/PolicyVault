@@ -29,7 +29,7 @@ export default function ClaimsView({ category }: { category: 'motor' | 'health' 
     let query = supabase
       .from('claims')
       .select('*')
-      .eq('category', category)
+      .eq('policy_type', category)
       .order('created_at', { ascending: false });
 
     if (searchTerm) {
