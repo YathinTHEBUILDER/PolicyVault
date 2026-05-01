@@ -28,6 +28,7 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function ReportsPage() {
   const [stats, setStats] = useState<any>({

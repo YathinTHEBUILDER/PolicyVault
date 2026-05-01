@@ -18,6 +18,7 @@ import {
   Loader2,
   Inbox
 } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { 
   BarChart, 
   Bar, 
