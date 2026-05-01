@@ -41,7 +41,7 @@ export default function NewOthersClaimPage() {
   } = useForm({
     resolver: zodResolver(claimSchema),
     defaultValues: {
-      category: 'others',
+      policy_type: 'others',
       status: 'Registered',
       document_keys: [],
     }
@@ -66,7 +66,6 @@ export default function NewOthersClaimPage() {
     try {
       const { error } = await supabase.from('claims').insert({
         ...values,
-        category: 'others',
         created_by: (await supabase.auth.getUser()).data.user?.id,
       });
 

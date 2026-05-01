@@ -41,7 +41,7 @@ export default function NewHealthClaimPage() {
   } = useForm({
     resolver: zodResolver(claimSchema),
     defaultValues: {
-      category: 'health',
+      policy_type: 'health',
       status: 'Registered',
       document_keys: [],
     }
@@ -66,7 +66,6 @@ export default function NewHealthClaimPage() {
     try {
       const { error } = await supabase.from('claims').insert({
         ...values,
-        category: 'health',
         created_by: (await supabase.auth.getUser()).data.user?.id,
       });
 

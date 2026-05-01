@@ -40,7 +40,7 @@ export default function NewMotorClaimPage() {
   } = useForm({
     resolver: zodResolver(claimSchema),
     defaultValues: {
-      category: 'motor',
+      policy_type: 'motor',
       status: 'Registered',
       document_keys: [],
     }
@@ -65,7 +65,6 @@ export default function NewMotorClaimPage() {
     try {
       const { error } = await supabase.from('claims').insert({
         ...values,
-        category: 'motor',
         created_by: (await supabase.auth.getUser()).data.user?.id,
       });
 
