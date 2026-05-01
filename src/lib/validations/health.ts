@@ -1,0 +1,30 @@
+import { z } from 'zod';
+
+export const healthPolicySchema = z.object({
+  customer_id: z.string().uuid(),
+  policy_number: z.string().min(1, 'Required'),
+  insurer_id: z.string().uuid(),
+  plan_name: z.string().min(1, 'Required'),
+  policy_type: z.string().min(1, 'Required'),
+  sum_insured: z.coerce.number().min(0),
+  premium_amount: z.coerce.number().min(0),
+  gst_amount: z.coerce.number().min(0),
+  floater_flag: z.boolean().default(false),
+  copay_percent: z.coerce.number().min(0).max(100).optional(),
+  room_rent_limit: z.string().optional(),
+  members: z.array(z.object({
+    name: z.string(),
+    age: z.coerce.number(),
+    gender: z.string(),
+    relationship: z.string(),
+    pre_existing_conditions: z.string().optional(),
+  })).min(1, 'At least one member is required'),
+  tpa_id: z.string().uuid().optional(),
+  waiting_period_months: z.coerce.number().optional(),
+  maternity_flag: z.boolean().default(false),
+  critical_illness_flag: z.boolean().default(false),
+  pa_rider_flag: z.boolean().default(false),
+  opd_flag: z.boolean().default(false),
+  policy_file_key: z.string().optional(),
+  tpa_card_key: z.string().optional(),
+});
