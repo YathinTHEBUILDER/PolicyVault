@@ -34,7 +34,6 @@ import {
 import Link from 'next/link';
 import { formatCurrency, cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function MotorDashboard() {
   const [stats, setStats] = useState<any>({
