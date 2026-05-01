@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import FileUpload from '@/components/ui/FileUpload';
+import Link from 'next/link';
 
 interface CustomerDocumentsProps {
   customerId: string;
@@ -166,7 +167,7 @@ export default function CustomerDocuments({ customerId }: CustomerDocumentsProps
                           </Link>
                         )}
                         <button 
-                          onClick={() => handleDownload(doc.r2_object_key)}
+                          onClick={() => handleDownload(doc.storage_object_key)}
                           className="p-2.5 bg-white border border-slate-100 hover:border-emerald-200 text-slate-400 hover:text-emerald-600 rounded-xl shadow-sm transition-all"
                           title="Secure Download"
                         >
