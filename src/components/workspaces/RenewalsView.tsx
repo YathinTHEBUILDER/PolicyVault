@@ -61,26 +61,26 @@ export default function RenewalsView({ category }: { category: 'motor' | 'health
     if (data) {
       let processed = data;
       if (category === 'motor') {
-        processed = data.filter(p => {
+        processed = data.filter((p: any) => {
           const odSoon = p.od_expiry_date && p.od_expiry_date >= today && p.od_expiry_date <= maxExpiry;
           const tpSoon = p.tp_expiry_date && p.tp_expiry_date >= today && p.tp_expiry_date <= maxExpiry;
           return odSoon || tpSoon;
-        }).map(p => ({ 
+        }).map((p: any) => ({ 
           ...p, 
           display_expiry: (p.od_expiry_date && p.od_expiry_date <= maxExpiry) ? p.od_expiry_date : p.tp_expiry_date
         }));
       } else {
-        processed = data.map(p => ({ ...p, display_expiry: p.expiry_date }));
+        processed = data.map((p: any) => ({ ...p, display_expiry: p.expiry_date }));
       }
 
       if (searchTerm) {
-        processed = processed.filter(p => 
+        processed = processed.filter((p: any) => 
           p.customer?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           p.policy_number?.toLowerCase().includes(searchTerm.toLowerCase())
         );
       }
 
-      setPolicies(processed.sort((a, b) => new Date(a.display_expiry).getTime() - new Date(b.display_expiry).getTime()));
+      setPolicies(processed.sort((a: any, b: any) => new Date(a.display_expiry).getTime() - new Date(b.display_expiry).getTime()));
     }
     setIsLoading(false);
   }
@@ -109,7 +109,7 @@ export default function RenewalsView({ category }: { category: 'motor' | 'health
 
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6 items-center">
         <div className="flex bg-slate-100 p-1 rounded-2xl">
-          {[7, 15, 30, 60].map(d => (
+          {[7, 15, 30, 60].map((d: number) => (
             <button 
               key={d}
               onClick={() => setDaysFilter(d)}
@@ -149,7 +149,7 @@ export default function RenewalsView({ category }: { category: 'motor' | 'health
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
-                [1, 2, 3].map(i => (
+                [1, 2, 3].map((i: number) => (
                   <tr key={i} className="animate-pulse">
                     <td colSpan={5} className="px-6 py-8"><div className="h-12 bg-slate-50 rounded-2xl w-full"></div></td>
                   </tr>
