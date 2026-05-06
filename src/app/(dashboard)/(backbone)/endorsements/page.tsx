@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 export default function EndorsementsPage() {
   const [endorsements, setEndorsements] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const supabase = createClient();
 
   useEffect(() => {
@@ -28,17 +29,19 @@ export default function EndorsementsPage() {
   }, []);
 
   async function fetchEndorsements() {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from('endorsements')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setEndorsements(data);
-    }
+    const { data } = await supabase.from('endorsements').select('*');
+    if (data) setEndorsements(data);
     setIsLoading(false);
   }
+
+  const filteredEndorsements = endorsements.filter(e => {
+    const search = searchTerm.toLowerCase();
+    return (
+      e.change_type?.toLowerCase().includes(search) ||
+      e.change_description?.toLowerCase().includes(search) ||
+      e.policy_id?.toLowerCase().includes(search)
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -63,7 +66,9 @@ export default function EndorsementsPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
               type="text"
-              placeholder="Search endorsements..."
+              placeholder="Search endorsements by type or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm"
             />
           </div>
@@ -87,12 +92,12 @@ export default function EndorsementsPage() {
                     <td colSpan={5} className="px-6 py-8"><div className="h-10 bg-slate-50 rounded-xl w-full"></div></td>
                   </tr>
                 ))
-              ) : endorsements.length === 0 ? (
+              ) : filteredEndorsements.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">No endorsements recorded yet.</td>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">No endorsements found matching "{searchTerm}".</td>
                 </tr>
               ) : (
-                endorsements.map((endorsement) => (
+                filteredEndorsements.map((endorsement) => (
                   <tr key={endorsement.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex flex-col">

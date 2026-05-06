@@ -35,16 +35,37 @@ export default function UniversalSearch() {
 
     const [customers, motor, health, others] = await Promise.all([
       supabase.from('customers').select('id, full_name, phone_primary').ilike('full_name', `%${val}%`).limit(3),
-      supabase.from('motor_policies').select('id, policy_number, vehicle_id').ilike('policy_number', `%${val}%`).limit(2),
+      supabase.from('motor_policies').select('id, policy_number, vehicle:vehicle_id(registration_number, make, model), customer:customer_id(full_name)').or(`policy_number.ilike.%${val}%,vehicle(registration_number).ilike.%${val}%,customer(full_name).ilike.%${val}%`).limit(3),
       supabase.from('health_policies').select('id, policy_number, plan_name').ilike('policy_number', `%${val}%`).limit(2),
       supabase.from('others_policies').select('id, policy_number, policy_type').ilike('policy_number', `%${val}%`).limit(2),
     ]);
 
     const allResults = [
       ...(customers.data || []).map(r => ({ ...r, type: 'customer', title: r.full_name, sub: r.phone_primary, icon: User, link: `/customers/${r.id}` })),
-      ...(motor.data || []).map(r => ({ ...r, type: 'motor', title: r.policy_number, sub: 'Motor Policy', icon: Shield, link: `/motor/${r.id}` })),
-      ...(health.data || []).map(r => ({ ...r, type: 'health', title: r.policy_number, sub: r.plan_name, icon: HeartPulse, link: `/health/${r.id}` })),
-      ...(others.data || []).map(r => ({ ...r, type: 'others', title: r.policy_number, sub: r.policy_type, icon: Package, link: `/others/${r.id}` })),
+      ...(motor.data || []).map(r => ({ 
+        ...r, 
+        type: 'motor', 
+        title: (r as any).customer?.full_name || 'Unknown Customer', 
+        sub: `Policy: ${r.policy_number} • ${(r.vehicle as any)?.registration_number}`, 
+        icon: Shield, 
+        link: `/motor/${r.id}` 
+      })),
+      ...(health.data || []).map(r => ({ 
+        ...r, 
+        type: 'health', 
+        title: (r as any).customer?.full_name || 'Unknown Customer', 
+        sub: `Policy: ${r.policy_number} • ${r.plan_name}`, 
+        icon: HeartPulse, 
+        link: `/health/${r.id}` 
+      })),
+      ...(others.data || []).map(r => ({ 
+        ...r, 
+        type: 'others', 
+        title: (r as any).customer?.full_name || 'Unknown Customer', 
+        sub: `Policy: ${r.policy_number} • ${r.policy_type}`, 
+        icon: Package, 
+        link: `/others/${r.id}` 
+      })),
     ];
 
     setResults(allResults);
@@ -87,7 +108,7 @@ export default function UniversalSearch() {
           <input 
             autoFocus
             type="text"
-            placeholder="Type to search policies, customers or documents..."
+            placeholder="Search by customer name, policy or vehicle..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 bg-transparent border-none focus:outline-none text-xl font-medium text-slate-900 placeholder:text-slate-300"

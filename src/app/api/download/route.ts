@@ -65,21 +65,33 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-    });
+    // Generate signed URL from Supabase Storage
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from('policy-vault')
+      .createSignedUrl(key, 3600);
 
-    const url = await getSignedUrl(b2Client, command, { expiresIn: 3600 });
+    if (signedError || !signedData?.signedUrl) {
+      console.error('Signed URL Error:', signedError);
+      return NextResponse.json({ error: 'Failed to generate download link' }, { status: 500 });
+    }
+
+    const url = signedData.signedUrl;
+
+    // Get actual document record for audit
+    const { data: doc } = await supabase
+      .from('documents')
+      .select('id')
+      .eq('storage_object_key', key)
+      .single();
 
     // Log access in audit_logs
     await supabase.from('audit_logs').insert({
       user_id: user.id,
-      user_role: role,
+      user_role: role as string,
       action: 'DOWNLOAD',
       table_name: 'documents',
-      record_id: customerIdFromKey as any, // We don't have the document UUID here easily, using customerId as record_id for now or placeholder
-      new_values: { key } as any
+      record_id: doc?.id || null,
+      new_values: { key }
     });
 
     return NextResponse.json({ url });

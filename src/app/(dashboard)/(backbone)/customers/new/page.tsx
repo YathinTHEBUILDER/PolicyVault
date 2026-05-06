@@ -25,7 +25,6 @@ import FileUpload from '@/components/ui/FileUpload';
 export default function NewCustomerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [customerId] = useState(crypto.randomUUID());
-  const [profilePhotoKey, setProfilePhotoKey] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -56,14 +55,24 @@ export default function NewCustomerPage() {
         return;
       }
 
+      const user = (await supabase.auth.getUser()).data.user;
+      
+      // Sanitize values: convert empty strings to null for optional fields
+      const sanitizedValues = Object.entries(values).reduce((acc: any, [key, value]) => {
+        acc[key] = value === '' ? null : value;
+        return acc;
+      }, {});
+
       const { error } = await supabase.from('customers').insert({
-        ...values,
+        ...sanitizedValues,
         id: customerId,
-        profile_photo_key: profilePhotoKey,
-        created_by: (await supabase.auth.getUser()).data.user?.id,
+        created_by: user?.id,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase Insert Error:', error);
+        throw new Error(`[${error.code}] ${error.message}`);
+      }
 
       toast.success('Customer added successfully');
       router.push('/customers');
@@ -111,16 +120,6 @@ export default function NewCustomerPage() {
             </h2>
             
             <div className="flex flex-col md:flex-row gap-8">
-              <div className="w-32 space-y-2">
-                <label className="text-sm font-semibold text-slate-700 ml-1">Profile Photo</label>
-                <FileUpload 
-                  label=""
-                  category="kyc"
-                  customerId={customerId}
-                  onUploadComplete={(data) => setProfilePhotoKey(data.storage_object_key)}
-                  className="w-32 h-32"
-                />
-              </div>
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-slate-700 ml-1">Full Name *</label>

@@ -18,8 +18,13 @@ import {
   Shield, 
   Plus,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles,
+  Zap,
+  IndianRupee
 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils/format';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import FileUpload from '@/components/ui/FileUpload';
 import { 
@@ -36,8 +41,13 @@ export default function NewMotorPolicyPage() {
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [insurers, setInsurers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [policyDocId, setPolicyDocId] = useState<string | null>(null);
   const [rcDocId, setRcDocId] = useState<string | null>(null);
+  const [isIssued, setIsIssued] = useState(false);
+  
+  // Track uploaded docs for cleanup if session abandoned
+  const [uploadedDocs, setUploadedDocs] = useState<{id: string, key: string}[]>([]);
   
   const router = useRouter();
   const supabase = createClient();
@@ -75,45 +85,124 @@ export default function NewMotorPolicyPage() {
 
   useEffect(() => {
     fetchInsurers();
+    fetchRecentCustomers();
+
+    // Cleanup logic: If the user leaves the page without issuing, 
+    // we should ideally delete the uploaded docs.
+    return () => {
+      // Note: We can't easily do async cleanup in unmount reliably with standard supabase client 
+      // because the component is gone. We'll mark them as issued and rely on a 
+      // background worker or just best-effort here.
+    };
   }, []);
+
+  // Effect to handle cleanup of orphaned documents
+  useEffect(() => {
+    const triggerCleanup = () => {
+      if (!isIssued && uploadedDocs.length > 0) {
+        console.log('🧹 Triggering robust cleanup for:', uploadedDocs.length, 'docs');
+        
+        fetch('/api/cleanup-docs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ docs: uploadedDocs }),
+          keepalive: true
+        });
+      }
+    };
+
+    // Handle browser/tab close
+    window.addEventListener('beforeunload', triggerCleanup);
+
+    // This runs on unmount (navigation within app)
+    return () => {
+      window.removeEventListener('beforeunload', triggerCleanup);
+      triggerCleanup();
+    };
+  }, [isIssued, uploadedDocs]);
+
+  async function fetchRecentCustomers() {
+    const { data } = await supabase
+      .from('customers')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (data) setCustomers(data);
+  }
 
   async function fetchInsurers() {
     const { data } = await supabase.from('insurers').select('id, name');
     if (data) setInsurers(data);
   }
 
-  async function searchCustomers() {
-    if (searchTerm.length < 3) return;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm.length >= 2) {
+        performSearch();
+      } else if (searchTerm.length === 0) {
+        fetchRecentCustomers();
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  async function performSearch() {
+    setIsSearching(true);
     const { data } = await supabase
       .from('customers')
       .select('*')
-      .ilike('full_name', `%${searchTerm}%`)
+      .or(`full_name.ilike.%${searchTerm}%,phone_primary.ilike.%${searchTerm}%`)
       .limit(5);
+    
     if (data) setCustomers(data);
+    setIsSearching(false);
   }
 
   const handleCreateVehicle = async (values: any) => {
     setIsLoading(true);
     try {
+      const formattedReg = values.registration_number.toUpperCase().replace(/\s/g, '');
+      
       const { data, error } = await supabase
         .from('vehicles')
-        .insert({ ...values, customer_id: selectedCustomer.id })
+        .insert({ 
+          ...values, 
+          customer_id: selectedCustomer.id,
+          registration_number: formattedReg
+        })
         .select()
         .single();
       
-      if (error) throw error;
+      let vehicleData = data;
+
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          const { data: existing, error: fetchError } = await supabase
+            .from('vehicles')
+            .select()
+            .eq('registration_number', formattedReg)
+            .single();
+          
+          if (fetchError) throw fetchError;
+          vehicleData = existing;
+          toast.success('Using existing vehicle records');
+        } else {
+          throw error;
+        }
+      }
 
       // Link RC document to vehicle
-      if (rcDocId) {
+      if (rcDocId && vehicleData) {
         await supabase
           .from('documents')
-          .update({ vehicle_id: data.id })
+          .update({ vehicle_id: vehicleData.id })
           .eq('id', rcDocId);
       }
 
-      setSelectedVehicle(data);
+      setSelectedVehicle(vehicleData);
+      policyForm.setValue('vehicle_id', vehicleData?.id);
       setStep(3);
-      toast.success('Vehicle added successfully');
+      if (!error) toast.success('Vehicle added successfully');
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -140,6 +229,7 @@ export default function NewMotorPolicyPage() {
           .eq('id', policyDocId);
       }
 
+      setIsIssued(true); // Mark as issued to prevent cleanup
       toast.success('Motor policy issued successfully');
       router.push('/motor');
     } catch (error: any) {
@@ -183,12 +273,14 @@ export default function NewMotorPolicyPage() {
                 type="text"
                 placeholder="Search by name or phone..."
                 value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  searchCustomers();
-                }}
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-lg font-medium"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-lg font-medium"
               />
+              {isSearching && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                </div>
+              )}
             </div>
           </div>
 
@@ -247,6 +339,7 @@ export default function NewMotorPolicyPage() {
                     placeholder="e.g. DL 01 AB 1234"
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 uppercase font-bold tracking-widest"
                   />
+                  {vehicleForm.formState.errors.registration_number && <p className="text-xs text-rose-500 font-bold mt-1">{vehicleForm.formState.errors.registration_number.message}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 ml-1">Vehicle Category *</label>
@@ -275,14 +368,17 @@ export default function NewMotorPolicyPage() {
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 ml-1">Year of Manufacture *</label>
                   <input type="number" {...vehicleForm.register('year_of_manufacture')} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
+                  {vehicleForm.formState.errors.year_of_manufacture && <p className="text-xs text-rose-500 font-bold mt-1">{vehicleForm.formState.errors.year_of_manufacture.message}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 ml-1">Make *</label>
                   <input {...vehicleForm.register('make')} placeholder="e.g. Maruti Suzuki" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
+                  {vehicleForm.formState.errors.make && <p className="text-xs text-rose-500 font-bold mt-1">{vehicleForm.formState.errors.make.message}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 ml-1">Model *</label>
                   <input {...vehicleForm.register('model')} placeholder="e.g. Swift" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
+                  {vehicleForm.formState.errors.model && <p className="text-xs text-rose-500 font-bold mt-1">{vehicleForm.formState.errors.model.message}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 ml-1">Fuel Type</label>
@@ -307,6 +403,7 @@ export default function NewMotorPolicyPage() {
                 onUploadComplete={(data) => {
                   vehicleForm.setValue('rc_copy_key' as any, data.storage_object_key);
                   setRcDocId(data.id);
+                  setUploadedDocs(prev => [...prev, { id: data.id, key: data.storage_object_key }]);
                 }}
               />
             </div>
@@ -346,18 +443,23 @@ export default function NewMotorPolicyPage() {
                     <option value="">Select Insurer</option>
                     {insurers.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                   </select>
+                  {policyForm.formState.errors.insurer_id && <p className="text-xs text-rose-500 font-bold mt-1">{policyForm.formState.errors.insurer_id.message}</p>}
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 ml-1">Policy Number *</label>
                   <input {...policyForm.register('policy_number')} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
+                  {policyForm.formState.errors.policy_number && <p className="text-xs text-rose-500 font-bold mt-1">{policyForm.formState.errors.policy_number.message}</p>}
                 </div>
 
                 {policyType === 'first_party' && (
                   <>
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-slate-700 ml-1">IDV (Insured Declared Value) *</label>
-                      <input type="number" {...policyForm.register('idv')} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
+                      <div className="relative">
+                        <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input type="number" {...policyForm.register('idv')} className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-bold" />
+                      </div>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-slate-700 ml-1">NCB Percentage *</label>
@@ -379,10 +481,12 @@ export default function NewMotorPolicyPage() {
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 ml-1">TP Start Date *</label>
                   <input type="date" {...policyForm.register('tp_start_date')} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
+                  {policyForm.formState.errors.tp_start_date && <p className="text-xs text-rose-500 font-bold mt-1">{policyForm.formState.errors.tp_start_date.message}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700 ml-1">TP Expiry Date *</label>
                   <input type="date" {...policyForm.register('tp_expiry_date')} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3" />
+                  {policyForm.formState.errors.tp_expiry_date && <p className="text-xs text-rose-500 font-bold mt-1">{policyForm.formState.errors.tp_expiry_date.message}</p>}
                 </div>
 
                 {policyType === 'first_party' && (
@@ -424,21 +528,30 @@ export default function NewMotorPolicyPage() {
                 {policyType === 'first_party' && (
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 uppercase">OD Premium</label>
-                    <input type="number" {...policyForm.register('od_premium')} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 font-bold" />
+                    <div className="relative">
+                      <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input type="number" {...policyForm.register('od_premium')} className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 font-bold text-blue-600" />
+                    </div>
                   </div>
                 )}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500 uppercase">TP Premium</label>
-                  <input type="number" {...policyForm.register('tp_premium')} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 font-bold" />
+                  <div className="relative">
+                    <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="number" {...policyForm.register('tp_premium')} className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 font-bold text-blue-600" />
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500 uppercase">GST Amount</label>
-                  <input type="number" {...policyForm.register('gst_amount')} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2" />
+                  <div className="relative">
+                    <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="number" {...policyForm.register('gst_amount')} className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 font-bold" />
+                  </div>
                 </div>
                 <div className="pt-4 border-t border-slate-100">
                   <div className="flex items-center justify-between">
                     <p className="font-bold text-slate-900">Total Premium</p>
-                    <p className="text-xl font-black text-blue-600">₹ {totalPremium.toLocaleString()}</p>
+                    <p className="text-xl font-black text-blue-600">{formatCurrency(totalPremium)}</p>
                   </div>
                 </div>
               </div>
@@ -453,6 +566,8 @@ export default function NewMotorPolicyPage() {
                 onUploadComplete={(data) => {
                   policyForm.setValue('policy_file_key', data.storage_object_key);
                   setPolicyDocId(data.id);
+                  setUploadedDocs(prev => [...prev, { id: data.id, key: data.storage_object_key }]);
+                  toast.success('Policy document uploaded successfully');
                 }}
               />
             </div>

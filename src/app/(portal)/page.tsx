@@ -36,6 +36,17 @@ export default function WorkspacePortal() {
     else setGreeting('Good Evening');
 
     fetchGlobalStats();
+
+    // Subscribe to changes on all policy tables to keep the portal stats in sync
+    const channels = ['motor_policies', 'health_policies', 'others_policies'].map(table => 
+      supabase.channel(`${table}-changes`)
+        .on('postgres_changes', { event: '*', schema: 'public', table }, () => fetchGlobalStats())
+        .subscribe()
+    );
+
+    return () => {
+      channels.forEach(ch => supabase.removeChannel(ch));
+    };
   }, []);
 
   async function fetchGlobalStats() {

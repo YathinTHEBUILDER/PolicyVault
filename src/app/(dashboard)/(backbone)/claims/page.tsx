@@ -35,34 +35,56 @@ export default function ClaimsPage() {
 
   async function fetchClaims() {
     setIsLoading(true);
-    const { data, error } = await supabase
+    // Fetch basic claims
+    const { data: claimsData, error } = await supabase
       .from('claims')
-      .select('*, customer:created_by(id)') // This is wrong, should join via policy
-      // In our schema, we need to join via policy_id. But since policy_id refers to different tables based on policy_type,
-      // we'll fetch them separately or use a union if possible.
-      // For now, let's fetch basic claims and we'll join names later or use a different approach.
+      .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setClaims(data);
+    if (!error && claimsData) {
+      // For each claim, fetch policy details to get customer name
+      const enrichedClaims = await Promise.all(claimsData.map(async (claim) => {
+        let policyData: any = null;
+        if (claim.policy_type === 'motor') {
+          const { data } = await supabase.from('motor_policies').select('policy_number, customer:customer_id(full_name)').eq('id', claim.policy_id).single();
+          policyData = data;
+        } else if (claim.policy_type === 'health') {
+          const { data } = await supabase.from('health_policies').select('policy_number, customer:customer_id(full_name)').eq('id', claim.policy_id).single();
+          policyData = data;
+        } else {
+          const { data } = await supabase.from('others_policies').select('policy_number, customer:customer_id(full_name)').eq('id', claim.policy_id).single();
+          policyData = data;
+        }
+        return { ...claim, policy: policyData, customer_name: policyData?.customer?.full_name || 'Unknown' };
+      }));
+      setClaims(enrichedClaims);
     }
     setIsLoading(false);
   }
 
-  const openClaims = claims.filter(c => c.status !== 'Settled' && c.status !== 'Rejected').length;
-  const pending30d = claims.filter(c => {
+  const filteredClaims = claims.filter(claim => {
+    const search = searchTerm.toLowerCase();
+    return (
+      claim.insurer_claim_number?.toLowerCase().includes(search) ||
+      claim.customer_name?.toLowerCase().includes(search) ||
+      claim.policy?.policy_number?.toLowerCase().includes(search)
+    );
+  });
+
+  const openClaims = filteredClaims.filter(c => c.status !== 'Settled' && c.status !== 'Rejected').length;
+  const pending30d = filteredClaims.filter(c => {
     const created = new Date(c.created_at);
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     return created < thirtyDaysAgo && c.status !== 'Settled' && c.status !== 'Rejected';
   }).length;
-  const settledThisMonth = claims.filter(c => {
+  const settledThisMonth = filteredClaims.filter(c => {
     const settled = c.updated_at ? new Date(c.updated_at) : new Date(c.created_at);
     const firstDayOfMonth = new Date();
     firstDayOfMonth.setDate(1);
     return c.status === 'Settled' && settled >= firstDayOfMonth;
   }).length;
-  const totalPayout = claims.reduce((acc, c) => acc + (Number(c.settled_amount) || 0), 0);
+  const totalPayout = filteredClaims.reduce((acc, c) => acc + (Number(c.settled_amount) || 0), 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -131,6 +153,8 @@ export default function ClaimsPage() {
             <input 
               type="text"
               placeholder="Search by claim number, customer or insurer..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm"
             />
           </div>
@@ -158,25 +182,20 @@ export default function ClaimsPage() {
                     <td colSpan={5} className="px-6 py-8"><div className="h-10 bg-slate-50 rounded-xl w-full"></div></td>
                   </tr>
                 ))
-              ) : claims.length === 0 ? (
+              ) : filteredClaims.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4">
-                    <EmptyState 
-                      icon={Inbox}
-                      title="No Claims Registered"
-                      description="You haven't logged any loss events yet. Registered claims will appear here for processing and settlement tracking."
-                      actionHref="/motor/claims/new"
-                      actionLabel="Register Claim"
-                    />
+                  <td colSpan={5} className="px-6 py-4 text-center py-12 text-slate-500 font-medium">
+                    No claims found matching "{searchTerm}"
                   </td>
                 </tr>
               ) : (
-                claims.map((claim) => (
+                filteredClaims.map((claim) => (
                   <tr key={claim.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex flex-col">
                         <p className="text-sm font-bold text-slate-900">{claim.insurer_claim_number || 'PENDING-ID'}</p>
-                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                        <p className="text-xs text-slate-500 font-bold mt-0.5">{claim.customer_name}</p>
+                        <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
                           <Calendar className="w-3 h-3" />
                           Loss: {format(new Date(claim.date_of_loss), 'dd MMM yyyy')}
                         </p>
@@ -191,7 +210,7 @@ export default function ClaimsPage() {
                         )}>
                           {claim.policy_type}
                         </span>
-                        <p className="text-xs text-slate-500 font-mono">ID: {claim.policy_id.substring(0, 8)}...</p>
+                        <p className="text-xs text-slate-900 font-bold">{claim.policy?.policy_number || 'N/A'}</p>
                       </div>
                     </td>
                     <td className="px-6 py-5">

@@ -86,6 +86,17 @@ export default function MotorDashboardPage() {
     return <span className="badge badge-active">Active</span>;
   };
 
+  const filteredPolicies = policies.filter(policy => {
+    const search = searchTerm.toLowerCase();
+    return (
+      policy.policy_number?.toLowerCase().includes(search) ||
+      policy.vehicle?.registration_number?.toLowerCase().includes(search) ||
+      policy.vehicle?.make?.toLowerCase().includes(search) ||
+      policy.vehicle?.model?.toLowerCase().includes(search) ||
+      policy.customer?.full_name?.toLowerCase().includes(search)
+    );
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -145,7 +156,7 @@ export default function MotorDashboardPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input 
             type="text"
-            placeholder="Search by policy number, vehicle or customer..."
+            placeholder="Search by customer name, vehicle or policy..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm"
@@ -199,12 +210,12 @@ export default function MotorDashboardPage() {
                     <td colSpan={5} className="px-6 py-4"><div className="h-10 bg-slate-100 rounded-xl w-full"></div></td>
                   </tr>
                 ))
-              ) : policies.length === 0 ? (
+              ) : filteredPolicies.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">No motor policies found.</td>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-medium">No motor policies found matching your search.</td>
                 </tr>
               ) : (
-                policies.map((policy) => (
+                filteredPolicies.map((policy) => (
                   <tr key={policy.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex flex-col">

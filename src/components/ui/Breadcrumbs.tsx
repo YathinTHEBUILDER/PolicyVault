@@ -12,7 +12,7 @@ export function Breadcrumbs() {
   if (paths.length === 0) return null;
 
   return (
-    <nav className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">
+    <nav className="flex items-center gap-2 text-[10px] lg:text-xs font-bold uppercase tracking-widest text-slate-400 mb-6 overflow-x-auto no-scrollbar whitespace-nowrap">
       <Link 
         href="/"
         className="hover:text-blue-600 transition-colors flex items-center gap-1.5"

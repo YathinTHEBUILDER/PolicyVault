@@ -48,16 +48,63 @@ export default function NewMotorClaimPage() {
 
   const documentKeys = watch('document_keys');
 
-  async function searchPolicies() {
-    if (searchTerm.length < 3) return;
-    
-    const { data } = await supabase
-      .from('motor_policies')
-      .select('*, customer:customer_id(full_name, phone_primary), vehicle:vehicle_id(registration_number, make, model)')
-      .ilike('policy_number', `%${searchTerm}%`)
-      .limit(5);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchPolicies();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-    if (data) setPolicies(data);
+  async function searchPolicies() {
+    if (searchTerm.length < 3) {
+      setPolicies([]);
+      return;
+    }
+    
+    try {
+      // 1. Search for customers matching the term
+      const { data: customerIds } = await supabase
+        .from('customers')
+        .select('id')
+        .ilike('full_name', `%${searchTerm}%`);
+      
+      const cIds = (customerIds || []).map(c => c.id);
+
+      // 2. Search for vehicles matching the term
+      const { data: vehicleIds } = await supabase
+        .from('motor_vehicles')
+        .select('id')
+        .ilike('registration_number', `%${searchTerm}%`);
+      
+      const vIds = (vehicleIds || []).map(v => v.id);
+
+      // 3. Build the query
+      let query = supabase
+        .from('motor_policies')
+        .select('*, customer:customer_id(full_name, phone_primary), vehicle:vehicle_id(registration_number, make, model)')
+        .eq('archived', false)
+        .limit(10);
+
+      const orConditions = [`policy_number.ilike.%${searchTerm}%`];
+      if (cIds.length > 0) orConditions.push(`customer_id.in.(${cIds.join(',')})`);
+      if (vIds.length > 0) orConditions.push(`vehicle_id.in.(${vIds.join(',')})`);
+
+      const { data, error } = await query.or(orConditions.join(','));
+
+      if (!error && data) {
+        setPolicies(data);
+      } else {
+        // Fallback to simple policy number search if everything else fails
+        const { data: fallback } = await supabase
+          .from('motor_policies')
+          .select('*, customer:customer_id(full_name, phone_primary), vehicle:vehicle_id(registration_number, make, model)')
+          .ilike('policy_number', `%${searchTerm}%`)
+          .limit(5);
+        if (fallback) setPolicies(fallback);
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+    }
   }
 
   const onSubmit = async (values: any) => {
@@ -111,12 +158,9 @@ export default function NewMotorClaimPage() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input 
                     type="text"
-                    placeholder="e.g. POL/MOT/..."
+                    placeholder="Search by customer name, vehicle # or policy..."
                     value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      searchPolicies();
-                    }}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-lg font-bold"
                   />
                 </div>

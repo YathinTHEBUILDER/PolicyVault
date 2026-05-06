@@ -25,12 +25,18 @@ import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 export default function DocumentVaultPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Deletion Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<{id: string, storageKey: string} | null>(null);
+  
   const supabase = createClient();
 
   useEffect(() => {
@@ -73,6 +79,40 @@ export default function DocumentVaultPage() {
     }
   };
 
+  const handleDeleteClick = (id: string, storageKey: string) => {
+    setSelectedDoc({ id, storageKey });
+    setIsDeleteModalOpen(true);
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!selectedDoc) return;
+    const { id, storageKey } = selectedDoc;
+    
+    try {
+      // 1. Delete from Supabase Storage
+      const { error: storageError } = await supabase.storage
+        .from('policy-vault')
+        .remove([storageKey]);
+
+      if (storageError) {
+        console.error('Storage deletion failed:', storageError);
+      }
+
+      // 2. Delete from Database
+      const { error } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.success('Document permanently deleted');
+      fetchDocuments();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   const filteredDocs = documents.filter(doc => {
     const matchesFilter = filter === 'all' 
       ? true 
@@ -96,7 +136,7 @@ export default function DocumentVaultPage() {
           </h1>
           <p className="text-slate-500 font-bold mt-1.5 flex items-center gap-2">
             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-            Backblaze B2 Storage Active • Secure Zero-Trust Access
+            Supabase High-Speed Storage Active • Secure Zero-Trust Access
           </p>
         </div>
       </div>
@@ -221,7 +261,7 @@ export default function DocumentVaultPage() {
                     </td>
                     <td className="px-8 py-6">
                       <p className="text-sm font-bold text-slate-600">{format(new Date(doc.created_at), 'dd MMM yyyy')}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{format(new Date(doc.created_at), 'HH:mm')}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{format(new Date(doc.created_at), 'hh:mm a')}</p>
                     </td>
                     <td className="px-8 py-6 text-right">
                       <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -242,8 +282,9 @@ export default function DocumentVaultPage() {
                           <Download className="w-4 h-4" />
                         </button>
                         <button 
+                          onClick={() => handleDeleteClick(doc.id, doc.storage_object_key)}
                           className="p-3 bg-white border border-slate-100 hover:border-rose-200 text-slate-400 hover:text-rose-600 rounded-2xl transition-all shadow-sm"
-                          title="Delete"
+                          title="Delete Permanently"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -256,6 +297,16 @@ export default function DocumentVaultPage() {
           </table>
         </div>
       </div>
+
+      <ConfirmModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handlePermanentDelete}
+        title="Permanently Delete?"
+        description="This action is critical and irreversible. The document will be purged from the database and storage permanently."
+        confirmText="Purge Document"
+        variant="danger"
+      />
     </div>
   );
 }

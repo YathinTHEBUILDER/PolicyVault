@@ -24,6 +24,7 @@ import FileUpload from '@/components/ui/FileUpload';
 
 export default function NewClaimPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [policies, setPolicies] = useState<any[]>([]);
   const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,9 +40,27 @@ export default function NewClaimPage() {
       const cat = params.get('category');
       if (cat === 'motor' || cat === 'health' || cat === 'others') {
         setPolicyType(cat);
+        fetchRecentPolicies(cat);
+      } else {
+        fetchRecentPolicies('motor');
       }
     }
   }, []);
+
+  async function fetchRecentPolicies(type: string) {
+    let table = '';
+    if (type === 'motor') table = 'motor_policies';
+    else if (type === 'health') table = 'health_policies';
+    else table = 'others_policies';
+
+    const { data } = await supabase
+      .from(table)
+      .select('*, customer:customer_id(full_name, phone_primary)')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (data) setPolicies(data);
+  }
 
   const {
     register,
@@ -59,9 +78,14 @@ export default function NewClaimPage() {
 
   const documentKeys = watch('document_keys');
 
-  async function searchPolicies() {
-    if (searchTerm.length < 3) return;
+  async function searchPolicies(term: string) {
+    if (term.length === 0) {
+      fetchRecentPolicies(policyType);
+      return;
+    }
+    if (term.length < 3) return;
     
+    setIsSearching(true);
     let table = '';
     if (policyType === 'motor') table = 'motor_policies';
     else if (policyType === 'health') table = 'health_policies';
@@ -70,10 +94,11 @@ export default function NewClaimPage() {
     const { data } = await supabase
       .from(table)
       .select('*, customer:customer_id(full_name, phone_primary)')
-      .ilike('policy_number', `%${searchTerm}%`)
+      .ilike('policy_number', `%${term}%`)
       .limit(5);
 
     if (data) setPolicies(data);
+    setIsSearching(false);
   }
 
   const onSubmit = async (values: any) => {
@@ -133,8 +158,11 @@ export default function NewClaimPage() {
                     <button 
                       key={t}
                       onClick={() => {
-                        setPolicyType(t as any);
+                        const newType = t as any;
+                        setPolicyType(newType);
                         setPolicies([]);
+                        setSearchTerm('');
+                        fetchRecentPolicies(newType);
                       }}
                       className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${policyType === t ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
                     >
@@ -149,11 +177,17 @@ export default function NewClaimPage() {
                     placeholder="Enter Policy Number..."
                     value={searchTerm}
                     onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      searchPolicies();
+                      const val = e.target.value;
+                      setSearchTerm(val);
+                      searchPolicies(val);
                     }}
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-lg font-bold"
+                    className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-lg font-bold"
                   />
+                  {isSearching && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -26,29 +26,53 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
     fetchCustomers();
+
+    // Subscribe to realtime changes for this specific table
+    const channel = supabase
+      .channel('customers-page-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'customers' },
+        () => {
+          console.log('🔄 Customer change detected, re-fetching...');
+          fetchCustomers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function fetchCustomers() {
     setIsLoading(true);
-    const { data, error } = await supabase
+    setError(null);
+    const { data, error: fetchError } = await supabase
       .from('customers')
       .select('*')
       .eq('archived', false)
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
+    if (fetchError) {
+      console.error('Fetch Error:', fetchError);
+      setError(fetchError.message);
+    } else if (data) {
       setCustomers(data);
     }
     setIsLoading(false);
   }
 
   const filteredCustomers = customers.filter(c => 
-    c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phone_primary.includes(searchTerm)
+    c.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.phone_primary?.includes(searchTerm) ||
+    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.address_permanent?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -96,6 +120,18 @@ export default function CustomersPage() {
           </select>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-center gap-3 text-rose-600">
+          <ShieldAlert className="w-5 h-5" />
+          <div className="flex-1">
+            <p className="text-sm font-bold">Data Fetch Error</p>
+            <p className="text-xs opacity-80">{error}</p>
+          </div>
+          <button onClick={() => fetchCustomers()} className="text-xs font-bold uppercase tracking-widest hover:underline">Retry</button>
+        </div>
+      )}
 
       {/* Customers Table */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">

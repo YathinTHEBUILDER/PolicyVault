@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const vehicleSchema = z.object({
-  customer_id: z.string().uuid(),
+  customer_id: z.string().uuid().optional(),
   registration_number: z.string().min(1, 'Required'),
   make: z.string().min(1, 'Required'),
   model: z.string().min(1, 'Required'),
@@ -18,15 +18,15 @@ export const vehicleSchema = z.object({
 });
 
 export const motorPolicySchema = z.object({
-  customer_id: z.string().uuid(),
-  vehicle_id: z.string().uuid(),
+  customer_id: z.string().uuid().optional(),
+  vehicle_id: z.string().uuid().optional(),
   policy_number: z.string().min(1, 'Required'),
-  insurer_id: z.string().uuid(),
+  insurer_id: z.string().uuid().min(1, 'Required'),
   policy_type: z.enum(['first_party', 'third_party']),
   idv: z.coerce.number().min(0).optional(),
   premium_amount: z.coerce.number().min(0),
   gst_amount: z.coerce.number().min(0),
-  net_premium: z.coerce.number().min(0),
+  net_premium: z.coerce.number().min(0).optional(),
   od_premium: z.coerce.number().min(0).optional(),
   tp_premium: z.coerce.number().min(0),
   od_start_date: z.string().optional(),

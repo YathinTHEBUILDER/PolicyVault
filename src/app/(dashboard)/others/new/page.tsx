@@ -31,6 +31,7 @@ export default function NewOthersPolicyPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [insurers, setInsurers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [policyDocId, setPolicyDocId] = useState<string | null>(null);
   
   const router = useRouter();
@@ -50,21 +51,39 @@ export default function NewOthersPolicyPage() {
 
   useEffect(() => {
     fetchInsurers();
+    fetchRecentCustomers();
   }, []);
+
+  async function fetchRecentCustomers() {
+    const { data } = await supabase
+      .from('customers')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (data) setCustomers(data);
+  }
 
   async function fetchInsurers() {
     const { data } = await supabase.from('insurers').select('id, name');
     if (data) setInsurers(data);
   }
 
-  async function searchCustomers() {
-    if (searchTerm.length < 3) return;
+  async function searchCustomers(term: string) {
+    if (term.length === 0) {
+      fetchRecentCustomers();
+      return;
+    }
+    if (term.length < 2) return;
+    
+    setIsSearching(true);
     const { data } = await supabase
       .from('customers')
       .select('*')
-      .ilike('full_name', `%${searchTerm}%`)
+      .or(`full_name.ilike.%${term}%,phone_primary.ilike.%${term}%`)
       .limit(5);
+    
     if (data) setCustomers(data);
+    setIsSearching(false);
   }
 
   const onSubmit = async (values: any) => {
@@ -124,11 +143,17 @@ export default function NewOthersPolicyPage() {
                 placeholder="Search by company or owner name..."
                 value={searchTerm}
                 onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  searchCustomers();
+                  const val = e.target.value;
+                  setSearchTerm(val);
+                  searchCustomers(val);
                 }}
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-lg font-medium"
+                className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-lg font-medium"
               />
+              {isSearching && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                </div>
+              )}
             </div>
           </div>
 

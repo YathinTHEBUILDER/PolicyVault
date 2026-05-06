@@ -75,7 +75,32 @@ export default function CustomerProfilePage() {
     setIsLoading(true);
     const { data, error } = await supabase
       .from('customers')
-      .select('id, full_name, dob, gender, phone_primary, phone_alternate, email, address_permanent, address_mailing, occupation, employer, annual_income_bracket, nominee_name, nominee_relationship, vip_flag, blacklist_flag, blacklist_reason, preferred_contact_method, best_time_to_call, do_not_disturb, lead_source, referred_by:referred_by_customer_id(full_name), staff:assigned_staff_id(email)')
+      .select(`
+        id, 
+        full_name, 
+        dob, 
+        gender, 
+        phone_primary, 
+        phone_alternate, 
+        email, 
+        address_permanent, 
+        address_mailing, 
+        occupation, 
+        employer, 
+        annual_income_bracket, 
+        nominee_name, 
+        nominee_relationship, 
+        vip_flag, 
+        blacklist_flag, 
+        blacklist_reason, 
+        preferred_contact_method, 
+        best_time_to_call, 
+        do_not_disturb, 
+        lead_source,
+        aadhaar_number,
+        pan_number,
+        referred_by:referred_by_customer_id(full_name)
+      `)
       .eq('id', id)
       .single();
 
@@ -101,55 +126,55 @@ export default function CustomerProfilePage() {
   return (
     <div className="space-y-8">
       {/* Profile Header */}
-      <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm relative overflow-hidden">
+      <div className="bg-white p-6 lg:p-8 rounded-3xl lg:rounded-[40px] border border-slate-200 shadow-sm relative overflow-hidden">
         {/* Background Decorations */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50"></div>
         
-        <div className="relative flex flex-col md:flex-row gap-8 items-start">
-          <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-[32px] flex items-center justify-center text-3xl font-bold shadow-xl shadow-blue-600/20">
+        <div className="relative flex flex-col lg:flex-row gap-6 lg:gap-8 items-center lg:items-start text-center lg:text-left">
+          <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-3xl lg:rounded-[32px] flex items-center justify-center text-2xl lg:text-3xl font-bold shadow-xl shadow-blue-600/20">
             {customer.full_name.charAt(0)}
           </div>
           
-          <div className="flex-1 space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{customer.full_name}</h1>
-              <div className="flex gap-2">
+          <div className="flex-1 space-y-4 w-full">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+              <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">{customer.full_name}</h1>
+              <div className="flex justify-center lg:justify-start gap-2">
                 {customer.vip_flag && (
-                  <span className="badge bg-amber-50 text-amber-600 border border-amber-100 py-1">
+                  <span className="badge bg-amber-50 text-amber-600 border border-amber-100 py-1 text-[10px]">
                     <ShieldAlert className="w-3 h-3 mr-1" /> VIP
                   </span>
                 )}
-                <span className={`badge ${customer.blacklist_flag ? 'badge-expired' : 'badge-active'} py-1`}>
+                <span className={cn("badge py-1 text-[10px]", customer.blacklist_flag ? 'badge-expired' : 'badge-active')}>
                   {customer.blacklist_flag ? 'Blacklisted' : 'Active Account'}
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-3 gap-x-8">
-              <div className="flex items-center gap-2 text-slate-500">
+              <div className="flex items-center justify-center lg:justify-start gap-2 text-slate-500">
                 <Phone className="w-4 h-4 text-slate-400" />
-                <span className="text-sm font-medium">+91 {customer.phone_primary}</span>
+                <span className="text-xs lg:text-sm font-medium">+91 {customer.phone_primary}</span>
               </div>
-              <div className="flex items-center gap-2 text-slate-500">
+              <div className="flex items-center justify-center lg:justify-start gap-2 text-slate-500">
                 <Mail className="w-4 h-4 text-slate-400" />
-                <span className="text-sm font-medium">{customer.email || 'No email provided'}</span>
+                <span className="text-xs lg:text-sm font-medium truncate max-w-[200px]">{customer.email || 'No email provided'}</span>
               </div>
-              <div className="flex items-center gap-2 text-slate-500">
+              <div className="flex items-center justify-center lg:justify-start gap-2 text-slate-500">
                 <MapPin className="w-4 h-4 text-slate-400" />
-                <span className="text-sm font-medium">{customer.address_permanent?.substring(0, 30)}...</span>
+                <span className="text-xs lg:text-sm font-medium truncate max-w-[200px]">{customer.address_permanent}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 w-full lg:w-auto">
             <Link 
               href={`/customers/${id}/edit`}
-              className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-2xl font-bold hover:bg-slate-50 transition-all"
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-2xl font-bold hover:bg-slate-50 transition-all text-sm"
             >
               <Edit2 className="w-4 h-4" />
-              Edit Profile
+              Edit
             </Link>
-            <button className="p-2.5 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">
+            <button className="flex-1 lg:flex-none p-2.5 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all flex items-center justify-center">
               <Plus className="w-5 h-5" />
             </button>
           </div>
@@ -157,13 +182,13 @@ export default function CustomerProfilePage() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-1">
+      <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto no-scrollbar scroll-smooth -mx-4 px-4 lg:mx-0 lg:px-0">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all relative",
+              "flex items-center gap-2 px-4 lg:px-6 py-3 text-xs lg:text-sm font-bold transition-all relative whitespace-nowrap",
               activeTab === tab.id 
                 ? "text-blue-600" 
                 : "text-slate-500 hover:text-slate-800"

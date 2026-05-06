@@ -102,30 +102,30 @@ export default function MotorDashboard() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-1000">
+    <div className="space-y-6 lg:space-y-8 animate-in fade-in duration-1000">
       {/* Dynamic Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter flex items-center gap-3">
-            <Car className="w-10 h-10 text-blue-600" />
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="text-center lg:text-left">
+          <h1 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tighter flex items-center justify-center lg:justify-start gap-3">
+            <Car className="w-8 h-8 lg:w-10 lg:h-10 text-blue-600" />
             Motor Fleet Command
           </h1>
-          <p className="text-slate-500 font-bold mt-1.5 flex items-center gap-2">
+          <p className="text-slate-500 text-sm lg:text-base font-bold mt-1.5 flex items-center justify-center lg:justify-start gap-2">
             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
             Operational Intelligence System Active
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
           <Link 
             href="/motor/claims/new"
-            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-6 py-3 rounded-[20px] font-black text-sm transition-all flex items-center gap-2 shadow-sm"
+            className="w-full sm:w-auto bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-6 py-3 rounded-xl lg:rounded-[20px] font-black text-sm transition-all flex items-center justify-center gap-2 shadow-sm"
           >
             <Activity className="w-4 h-4" />
             Log Loss
           </Link>
           <Link 
             href="/motor/new"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-[20px] font-black text-sm shadow-xl shadow-blue-600/20 transition-all flex items-center gap-2 active:scale-95"
+            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl lg:rounded-[20px] font-black text-sm shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             Issue Policy
@@ -134,20 +134,20 @@ export default function MotorDashboard() {
       </div>
 
       {/* Primary KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {[
           { label: 'Total Fleet', value: stats.totalPolicies, sub: 'Policies Managed', icon: Shield, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Unsettled Claims', value: stats.activeClaims, sub: 'Action Required', icon: Activity, color: 'text-rose-600', bg: 'bg-rose-50' },
           { label: 'Expiry (30d)', value: stats.renewals30Days, sub: 'Retention Pipeline', icon: Clock, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'GWP Volume', value: `₹${(stats.totalPremium / 100000).toFixed(1)}L`, sub: 'Gross Premium', icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+          { label: 'GWP Volume', value: formatCurrency(stats.totalPremium), sub: 'Gross Premium', icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all duration-500">
-            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110", stat.bg, stat.color)}>
-              <stat.icon className="w-7 h-7" />
+          <div key={i} className="bg-white p-4 lg:p-8 rounded-3xl lg:rounded-[40px] border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all duration-500">
+            <div className={cn("w-10 h-10 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl flex items-center justify-center mb-4 lg:mb-6 transition-transform group-hover:scale-110", stat.bg, stat.color)}>
+              <stat.icon className="w-5 h-5 lg:w-7 lg:h-7" />
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-2">{stat.value}</h3>
-            <p className="text-xs text-slate-400 font-bold mt-2">{stat.sub}</p>
+            <p className="text-[8px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+            <h3 className="text-xl lg:text-3xl font-black text-slate-900 mt-1 lg:mt-2 truncate">{stat.value}</h3>
+            <p className="hidden lg:block text-xs text-slate-400 font-bold mt-2">{stat.sub}</p>
           </div>
         ))}
       </div>

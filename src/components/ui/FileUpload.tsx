@@ -4,6 +4,9 @@ import { useState, useRef } from 'react';
 import { Upload, X, FileText, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
+import { createClient } from '@/lib/supabase/client';
+
+const supabase = createClient();
 
 interface FileUploadProps {
   label: string;
@@ -34,33 +37,68 @@ export default function FileUpload({ label, category, customerId, onUploadComple
 
   const startUpload = async (fileToUpload: File) => {
     setIsUploading(true);
-    setUploadProgress(10);
-
-    const formData = new FormData();
-    formData.append('file', fileToUpload);
-    formData.append('category', category);
-    formData.append('customerId', customerId);
+    setUploadProgress(0);
 
     try {
-      setUploadProgress(30);
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      // 0. Check for duplicates
+      const { data: existingDoc } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('customer_id', customerId)
+        .eq('document_type', category)
+        .eq('document_name', fileToUpload.name)
+        .eq('archived', false)
+        .maybeSingle();
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Upload failed');
+      if (existingDoc) {
+        toast.error('This document has already been uploaded for this customer.');
+        setIsUploading(false);
+        return;
       }
 
-      setUploadProgress(90);
-      const data = await res.json();
-      setUploadedKey(data.key);
-      onUploadComplete(data.document || data.key);
+      // 1. Upload to Supabase Storage (High Speed & Low Latency)
+      const fileExt = fileToUpload.name.split('.').pop();
+      const fileName = `${customerId}/${category}/${Date.now()}.${fileExt}`;
+      const filePath = `policy-vault/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('policy-vault')
+        .upload(fileName, fileToUpload, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      setUploadProgress(80);
+
+      // 2. Register in DB
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: document, error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          customer_id: customerId,
+          document_name: fileToUpload.name,
+          storage_object_key: uploadData.path,
+          file_size_bytes: fileToUpload.size,
+          mime_type: fileToUpload.type,
+          document_type: category,
+          uploaded_by: user.id
+        })
+        .select()
+        .single();
+
+      if (dbError) throw dbError;
+
+      setUploadedKey(uploadData.path);
+      onUploadComplete(document);
       setUploadProgress(100);
       toast.success('File uploaded successfully');
     } catch (error: any) {
-      toast.error(error.message);
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Upload failed');
       setFile(null);
     } finally {
       setIsUploading(false);

@@ -97,6 +97,16 @@ export default function RenewalsPage() {
     setIsLoading(false);
   }
 
+  const filteredRenewals = policies.filter(policy => {
+    const search = searchTerm.toLowerCase();
+    return (
+      policy.customer?.full_name?.toLowerCase().includes(search) ||
+      policy.customer?.phone_primary?.includes(searchTerm) ||
+      policy.policy_number?.toLowerCase().includes(search) ||
+      policy.vehicle?.registration_number?.toLowerCase().includes(search)
+    );
+  });
+
   const getUrgencyColor = (expiryDate: string) => {
     const daysLeft = differenceInDays(new Date(expiryDate), new Date());
     if (daysLeft <= 7) return 'text-rose-600 bg-rose-50 border-rose-100';
@@ -108,8 +118,8 @@ export default function RenewalsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Renewals Center</h1>
-          <p className="text-slate-500 mt-1">Manage and follow up on policies expiring soon.</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tighter uppercase">Renewals Center</h1>
+          <p className="text-slate-500 font-bold mt-1 uppercase text-[10px] tracking-widest">Manage and follow up on policies expiring soon.</p>
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl font-medium hover:bg-slate-50 transition-all">
@@ -119,41 +129,52 @@ export default function RenewalsPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex bg-slate-100 p-1 rounded-2xl">
-            {[7, 15, 30, 60].map(d => (
-              <button 
-                key={d}
-                onClick={() => setDaysFilter(d)}
-                className={cn(
-                  "px-6 py-2 rounded-xl text-sm font-bold transition-all",
-                  daysFilter === d ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                )}
-              >
-                {d} Days
-              </button>
-            ))}
+      {/* Filters & Search */}
+      <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input 
+              type="text"
+              placeholder="Search by name, phone, policy or vehicle..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-6 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold text-slate-900"
+            />
           </div>
 
-          <div className="h-8 w-px bg-slate-200"></div>
+          <div className="flex flex-wrap items-center gap-4 lg:justify-end">
+            <div className="flex bg-slate-100 p-1 rounded-2xl">
+              {[7, 15, 30, 60].map(d => (
+                <button 
+                  key={d}
+                  onClick={() => setDaysFilter(d)}
+                  className={cn(
+                    "px-6 py-2 rounded-xl text-sm font-bold transition-all",
+                    daysFilter === d ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  )}
+                >
+                  {d} Days
+                </button>
+              ))}
+            </div>
 
-          <div className="flex gap-2">
-            {['all', 'motor', 'health', 'others'].map(c => (
-              <button 
-                key={c}
-                onClick={() => setCategoryFilter(c)}
-                className={cn(
-                  "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border",
-                  categoryFilter === c 
-                    ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20" 
-                    : "bg-white text-slate-500 border-slate-200 hover:border-blue-200 hover:text-blue-600"
-                )}
-              >
-                {c}
-              </button>
-            ))}
+            <div className="flex gap-2">
+              {['all', 'motor', 'health', 'others'].map(c => (
+                <button 
+                  key={c}
+                  onClick={() => setCategoryFilter(c)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                    categoryFilter === c 
+                      ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20" 
+                      : "bg-white text-slate-500 border-slate-200 hover:border-blue-200 hover:text-blue-600"
+                  )}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -179,18 +200,18 @@ export default function RenewalsPage() {
                     <td colSpan={5} className="px-6 py-8"><div className="h-12 bg-slate-50 rounded-2xl w-full"></div></td>
                   </tr>
                 ))
-              ) : policies.length === 0 ? (
+              ) : filteredRenewals.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-4">
                     <EmptyState 
                       icon={CheckCircle2}
-                      title="Pipeline Clear"
-                      description="No policies are expiring within the selected period. All your clients are currently covered."
+                      title="No matching renewals"
+                      description="We couldn't find any policies expiring soon that match your search criteria."
                     />
                   </td>
                 </tr>
               ) : (
-                policies.map((policy) => {
+                filteredRenewals.map((policy) => {
                   const daysLeft = differenceInDays(new Date(policy.display_expiry), new Date());
                   return (
                     <tr key={policy.id} className="hover:bg-slate-50/50 transition-colors group">

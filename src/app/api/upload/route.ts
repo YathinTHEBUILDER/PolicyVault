@@ -34,8 +34,11 @@ export async function POST(request: NextRequest) {
     const documentType = formData.get('documentType') as string || null;
 
     if (!file || !customerId || !category) {
+      console.error('Upload Error: Missing required fields', { hasFile: !!file, customerId, category });
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    console.log(`Starting upload for file: ${file.name} (${file.size} bytes)`);
 
     // Validation
     const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
@@ -54,6 +57,8 @@ export async function POST(request: NextRequest) {
 
     // Upload to Backblaze
     const buffer = Buffer.from(await file.arrayBuffer());
+    console.log('File buffered, uploading to Backblaze...');
+    
     await b2Client.send(
       new PutObjectCommand({
         Bucket: BUCKET_NAME,
@@ -62,6 +67,8 @@ export async function POST(request: NextRequest) {
         ContentType: file.type,
       })
     );
+
+    console.log('Upload to Backblaze successful, recording in DB...');
 
     // Store in DB
     const { data: document, error: dbError } = await supabase
@@ -96,8 +103,11 @@ export async function POST(request: NextRequest) {
       key: objectKey
     });
 
-  } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Critical Upload Error:', error);
+    return NextResponse.json({ 
+      error: error.message || 'Internal server error',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }
