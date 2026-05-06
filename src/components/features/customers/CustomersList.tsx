@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useParams } from 'next/navigation';
 
