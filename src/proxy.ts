@@ -2,8 +2,12 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 export async function proxy(request: NextRequest) {
-  // Temporarily bypass auth for debugging 404
-  return NextResponse.next();
+  try {
+    return await updateSession(request)
+  } catch (error) {
+    console.error('Proxy Error:', error);
+    return NextResponse.next();
+  }
 }
 
 export const config = {
