@@ -26,12 +26,15 @@ import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { useParams } from 'next/navigation';
 
-export default function DocumentVaultPage() {
+export function DocumentsList() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const params = useParams();
+  const workspace = params.workspace as string;
   
   // Deletion Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -89,22 +92,18 @@ export default function DocumentVaultPage() {
     const { id, storageKey } = selectedDoc;
     
     try {
-      // 1. Delete from Supabase Storage
-      const { error: storageError } = await supabase.storage
-        .from('policy-vault')
-        .remove([storageKey]);
+      // 1. Delete from Supabase Storage (Wait, the app uses B2, but the code says supabase.storage)
+      // This is a bug! It should use the API for B2 deletion.
+      // But let's check if they use Supabase Storage as fallback.
+      // Actually, the upload route uses B2. So deletion should use B2.
+      
+      const res = await fetch(`/api/documents/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, storageKey })
+      });
 
-      if (storageError) {
-        console.error('Storage deletion failed:', storageError);
-      }
-
-      // 2. Delete from Database
-      const { error } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      if (!res.ok) throw new Error('Deletion failed');
       
       toast.success('Document permanently deleted');
       fetchDocuments();
@@ -132,11 +131,11 @@ export default function DocumentVaultPage() {
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tighter flex items-center gap-3">
             <FileText className="w-10 h-10 text-slate-900" />
-            Central Document Vault
+            Master Vault
           </h1>
           <p className="text-slate-500 font-bold mt-1.5 flex items-center gap-2">
             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-            Supabase High-Speed Storage Active • Secure Zero-Trust Access
+            Enterprise Cloud Storage Active • Pure Light Theme
           </p>
         </div>
       </div>
@@ -207,15 +206,11 @@ export default function DocumentVaultPage() {
               ) : filteredDocs.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
-                        <Inbox className="w-8 h-8 text-slate-300" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-slate-900">No Documents Found</h3>
-                        <p className="text-sm text-slate-500">All uploaded policy and KYC files will appear here automatically.</p>
-                      </div>
-                    </div>
+                    <EmptyState 
+                      icon={Inbox}
+                      title="Vault Empty"
+                      description="No documents found in the current selection. All uploaded files will appear here."
+                    />
                   </td>
                 </tr>
               ) : (
@@ -247,7 +242,7 @@ export default function DocumentVaultPage() {
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-slate-900">{doc.customer?.full_name}</span>
                         <Link 
-                          href={`/customers/${doc.customer_id}`}
+                          href={workspace ? `/${workspace}/customers/${doc.customer_id}` : `/customers/${doc.customer_id}`}
                           className="text-[10px] font-black text-slate-400 hover:text-blue-600 uppercase tracking-widest mt-1 flex items-center gap-1"
                         >
                           View Profile <ExternalLink className="w-2 h-2" />
@@ -265,15 +260,6 @@ export default function DocumentVaultPage() {
                     </td>
                     <td className="px-8 py-6 text-right">
                       <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {doc.policy_id && (
-                          <Link
-                            href={`/${doc.policy_type?.toLowerCase().split('_')[0]}/${doc.policy_id}`}
-                            className="p-3 bg-white border border-slate-100 hover:border-blue-200 text-slate-400 hover:text-blue-600 rounded-2xl transition-all shadow-sm"
-                            title="Related Policy"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Link>
-                        )}
                         <button 
                           onClick={() => handleDownload(doc.storage_object_key, doc.document_name)}
                           className="p-3 bg-white border border-slate-100 hover:border-emerald-200 text-slate-400 hover:text-emerald-600 rounded-2xl transition-all shadow-sm"
@@ -303,7 +289,7 @@ export default function DocumentVaultPage() {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handlePermanentDelete}
         title="Permanently Delete?"
-        description="This action is critical and irreversible. The document will be purged from the database and storage permanently."
+        description="This action is critical and irreversible. The document will be purged from the database and cloud storage permanently."
         confirmText="Purge Document"
         variant="danger"
       />

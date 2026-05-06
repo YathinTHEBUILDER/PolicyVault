@@ -30,7 +30,7 @@ import {
 import { cn, formatCurrency } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/EmptyState';
 
-export default function ReportsPage() {
+export function ReportsView() {
   const [stats, setStats] = useState<any>({
     motor: 0,
     health: 0,
@@ -71,23 +71,17 @@ export default function ReportsPage() {
     { name: 'Others', value: stats.others, color: '#6366f1' },
   ];
 
-  // We'll leave trendData empty for now until we have time-series aggregation
-  const trendData: any[] = [];
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Operational Insights</h1>
-          <p className="text-slate-500 font-medium">Detailed performance metrics across all workspaces.</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Unified Insights</h1>
+          <p className="text-slate-500 font-medium">Detailed performance metrics across all operational domains.</p>
         </div>
         <div className="flex items-center gap-3">
           <button className="bg-white border border-slate-200 px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50 transition-all">
             <Download className="w-4 h-4" />
             Export PDF
-          </button>
-          <button className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-xl shadow-blue-600/20 transition-all">
-            Share Report
           </button>
         </div>
       </div>
@@ -121,14 +115,6 @@ export default function ReportsPage() {
                 <TrendingUp className="w-6 h-6 text-blue-600" />
                 Issuance Trend by Category
               </h3>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div> Motor
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
-                  <div className="w-2 h-2 rounded-full bg-rose-500"></div> Health
-                </div>
-              </div>
             </div>
             <div className="h-[400px]">
               <div className="h-full flex items-center justify-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">

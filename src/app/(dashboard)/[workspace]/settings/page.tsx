@@ -24,7 +24,7 @@ const categories = [
   { id: 'regional', label: 'Regional Settings', icon: Globe, color: 'text-rose-600', bg: 'bg-rose-50' },
 ];
 
-export default function SettingsPage() {
+export default function WorkspaceSettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -37,7 +37,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
       <header>
         <h1 className="text-3xl font-black text-slate-900 tracking-tighter">System Settings</h1>
         <p className="text-slate-500 font-bold mt-1.5 flex items-center gap-2">
@@ -92,19 +92,19 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                    <input type="text" placeholder="Yathin Gnaneshwar" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    <input type="text" placeholder="Yathin Gnaneshwar" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-                    <input type="email" placeholder="yathin@policyvault.com" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    <input type="email" placeholder="yathin@policyvault.com" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Organization</label>
-                    <input type="text" placeholder="PolicyVault Insurance Brokers" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    <input type="text" placeholder="PolicyVault Insurance Brokers" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Designation</label>
-                    <input type="text" placeholder="Administrator" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                    <input type="text" placeholder="Administrator" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500" />
                   </div>
                 </div>
               )}
@@ -112,7 +112,7 @@ export default function SettingsPage() {
               {activeTab !== 'profile' && (
                 <div className="flex flex-col items-center justify-center h-full py-20 text-center space-y-4">
                   <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
-                    <SettingsIcon className="w-10 h-10 animate-spin-slow" />
+                    <SettingsIcon className="w-10 h-10 animate-pulse" />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">Module Under Maintenance</h3>
@@ -126,9 +126,9 @@ export default function SettingsPage() {
               <button 
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-slate-900/10 transition-all active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50"
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Save Changes</>}
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Finalize Changes</>}
               </button>
             </div>
           </div>

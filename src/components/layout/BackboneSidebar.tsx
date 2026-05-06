@@ -18,6 +18,8 @@ import {
 import { cn } from '@/lib/utils';
 import UniversalSearch from './UniversalSearch';
 
+import { useParams } from 'next/navigation';
+
 const backboneItems = [
   { label: 'Global Customers', href: '/customers', icon: Users },
   { label: 'All Policies', href: '/policies', icon: ShieldCheck },
@@ -30,6 +32,9 @@ const backboneItems = [
 
 export function BackboneSidebar() {
   const pathname = usePathname();
+  const params = useParams();
+  const workspace = params.workspace as string;
+  const prefix = workspace ? `/${workspace}` : '';
 
   return (
     <aside className="w-72 h-screen bg-white text-slate-500 flex flex-col border-r border-slate-200 relative z-50 overflow-hidden">
@@ -64,11 +69,12 @@ export function BackboneSidebar() {
           </div>
           <div className="space-y-1.5">
             {backboneItems.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              const fullHref = `${prefix}${item.href}`;
+              const isActive = pathname === fullHref || (fullHref !== '/' && pathname.startsWith(fullHref));
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={fullHref}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
                     isActive 
@@ -86,7 +92,7 @@ export function BackboneSidebar() {
       </nav>
 
       <div className="p-8 bg-slate-50/50 border-t border-slate-100 space-y-2">
-        <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors">
+        <Link href={`${prefix}/settings`} className="flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors">
           <Settings className="w-4 h-4" /> Settings
         </Link>
         <button className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-rose-500 transition-colors">

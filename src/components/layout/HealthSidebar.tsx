@@ -62,7 +62,7 @@ export function HealthSidebar() {
           </div>
           <div className="space-y-1.5">
             {healthItems.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
@@ -85,10 +85,16 @@ export function HealthSidebar() {
         <div className="mt-auto pt-8 border-t border-slate-100">
           <p className="px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Core Infrastructure</p>
           <div className="space-y-1">
-            <Link href="/customers" className="flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors">
+            <Link href="/health/customers" className={cn(
+              "flex items-center gap-3 px-4 py-2 text-xs font-bold transition-colors",
+              pathname.includes('/customers') ? "text-rose-600 bg-rose-50 rounded-xl" : "text-slate-500 hover:text-rose-600"
+            )}>
               <Users className="w-4 h-4" /> Global CRM
             </Link>
-            <Link href="/documents" className="flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors">
+            <Link href="/health/documents" className={cn(
+              "flex items-center gap-3 px-4 py-2 text-xs font-bold transition-colors",
+              pathname.includes('/documents') ? "text-rose-600 bg-rose-50 rounded-xl" : "text-slate-500 hover:text-rose-600"
+            )}>
               <FileText className="w-4 h-4" /> Master Vault
             </Link>
           </div>
@@ -96,7 +102,7 @@ export function HealthSidebar() {
       </nav>
 
       <div className="p-8 bg-slate-50/50 border-t border-slate-100 space-y-2">
-        <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors">
+        <Link href="/health/settings" className="flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors">
           <Settings className="w-4 h-4" /> Settings
         </Link>
         <button className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-rose-500 transition-colors">
