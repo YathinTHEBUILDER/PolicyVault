@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { 
   Car, 
   HeartPulse, 
@@ -45,27 +45,24 @@ const workspaces = [
   {
     id: 'backbone',
     label: 'Backbone Management',
-    href: '/customers', // Default backbone entry
+    href: '/backbone/customers', // Default backbone entry
     icon: Layers,
     color: 'text-emerald-600',
     bg: 'bg-emerald-50',
-    border: 'border-emerald-100',
-    matchPrefixes: ['/customers', '/policies', '/claims', '/renewals', '/reports', '/documents', '/settings']
+    border: 'border-emerald-100'
   }
 ];
 
 export function WorkspaceSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const params = useParams();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const workspaceParam = params.workspace as string;
 
-  // Determine current workspace based on URL
-  const currentWorkspace = workspaces.find(w => {
-    if (w.matchPrefixes) {
-      return w.matchPrefixes.some(p => pathname.startsWith(p));
-    }
-    return pathname.startsWith(w.href);
-  }) || workspaces[0];
+  // Determine current workspace based on URL params or pathname
+  const currentWorkspace = workspaces.find(w => w.id === workspaceParam) || workspaces[0];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

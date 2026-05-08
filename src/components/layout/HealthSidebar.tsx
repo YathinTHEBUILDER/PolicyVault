@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { 
   LayoutDashboard, 
   HeartPulse, 
@@ -18,16 +18,20 @@ import {
 import { cn } from '@/lib/utils';
 import UniversalSearch from './UniversalSearch';
 
-const healthItems = [
-  { label: 'Dashboard', href: '/health', icon: LayoutDashboard },
-  { label: 'Lives Covered', href: '/health/policies', icon: ShieldCheck },
-  { label: 'Renewals Center', href: '/health/renewals', icon: RefreshCcw },
-  { label: 'Claims Settlement', href: '/health/claims', icon: ClipboardCheck },
-  { label: 'Endorsements', href: '/health/endorsements', icon: History },
-];
-
 export function HealthSidebar() {
   const pathname = usePathname();
+  const params = useParams();
+  const workspace = params.workspace as string || 'health';
+
+  const baseUrl = `/${workspace}`;
+
+  const healthItems = [
+    { label: 'Dashboard', href: baseUrl, icon: LayoutDashboard },
+    { label: 'Lives Covered', href: `${baseUrl}/policies`, icon: ShieldCheck },
+    { label: 'Renewals Center', href: `${baseUrl}/renewals`, icon: RefreshCcw },
+    { label: 'Claims Settlement', href: `${baseUrl}/claims`, icon: ClipboardCheck },
+    { label: 'Endorsements', href: `${baseUrl}/endorsements`, icon: History },
+  ];
 
   return (
     <aside className="w-72 h-screen bg-white text-slate-500 flex flex-col border-r border-slate-200 relative z-50 overflow-hidden">
@@ -85,13 +89,13 @@ export function HealthSidebar() {
         <div className="mt-auto pt-8 border-t border-slate-100">
           <p className="px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Core Infrastructure</p>
           <div className="space-y-1">
-            <Link href="/health/customers" className={cn(
+            <Link href={`${baseUrl}/customers`} className={cn(
               "flex items-center gap-3 px-4 py-2 text-xs font-bold transition-colors",
               pathname.includes('/customers') ? "text-rose-600 bg-rose-50 rounded-xl" : "text-slate-500 hover:text-rose-600"
             )}>
               <Users className="w-4 h-4" /> Global CRM
             </Link>
-            <Link href="/health/documents" className={cn(
+            <Link href={`${baseUrl}/documents`} className={cn(
               "flex items-center gap-3 px-4 py-2 text-xs font-bold transition-colors",
               pathname.includes('/documents') ? "text-rose-600 bg-rose-50 rounded-xl" : "text-slate-500 hover:text-rose-600"
             )}>
@@ -102,7 +106,7 @@ export function HealthSidebar() {
       </nav>
 
       <div className="p-8 bg-slate-50/50 border-t border-slate-100 space-y-2">
-        <Link href="/health/settings" className="flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors">
+        <Link href={`${baseUrl}/settings`} className="flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors">
           <Settings className="w-4 h-4" /> Settings
         </Link>
         <button className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-rose-500 transition-colors">
