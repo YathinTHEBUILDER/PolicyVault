@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { SITE_URL } from '../constants'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -35,16 +34,16 @@ export async function updateSession(request: NextRequest) {
   const isPortalAuthPage = request.nextUrl.pathname.startsWith('/portal/login') || request.nextUrl.pathname.startsWith('/portal/verify')
   const isPublicApi = request.nextUrl.pathname.startsWith('/api/public')
 
-  const baseUrl = SITE_URL || request.nextUrl.origin
-
   if (!user && !isAuthPage && !isPortalAuthPage && !isPublicApi) {
-    const loginUrl = new URL('/login', baseUrl)
-    return NextResponse.redirect(loginUrl)
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
   }
 
   if (user && isAuthPage) {
-    const homeUrl = new URL('/', baseUrl)
-    return NextResponse.redirect(homeUrl)
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse
